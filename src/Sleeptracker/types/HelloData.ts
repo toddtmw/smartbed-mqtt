@@ -58,7 +58,7 @@ export type HelloData = {
   macAddress: string;
   mfgDate: string;
   mfgSerial: string;
-  motorMeta: {
+  motorMeta?: {
     boardFirmwareVersion: number;
     boardFirmwareVersionString: string;
     boardHardwareVersion: number;

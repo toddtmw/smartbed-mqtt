@@ -74,7 +74,9 @@ export const sleeptracker = async (mqtt: IMQTTConnection) => {
           },
         };
       }
-      const capabilities = helloData.motorMeta.capabilities;
+      // Tracker-only devices have no motorMeta — default to empty so the
+      // controller-building block below becomes a no-op (no base to control).
+      const capabilities = helloData.motorMeta?.capabilities ?? [];
       const sleepSensors = await getSleepSensors(bed.processorId, user);
       const sideNameFunc = getSideNameFunc(sleepSensors, (s) => s.unitNumber);
       for (const sleepSensor of sleepSensors) {

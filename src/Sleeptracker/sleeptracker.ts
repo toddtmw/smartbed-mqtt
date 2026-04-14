@@ -45,10 +45,15 @@ export const sleeptracker = async (mqtt: IMQTTConnection) => {
       }
 
       if (!bed) {
+        const { baseSmartCableSupported: isSmartBed, powerBase } = device;
+        // Tracker-only devices (e.g. Beautyrest Sleeptracker without a SmartMotion
+        // base) return powerBase: null. Default the smart-base fields so the
+        // add-on can still expose sleep sensors / environment sensors.
         const {
-          baseSmartCableSupported: isSmartBed,
-          powerBase: { antiSnorePresetSupported, headAngleTicksPerDegree, footAngleTicksPerDegree },
-        } = device;
+          antiSnorePresetSupported = false,
+          headAngleTicksPerDegree = 0,
+          footAngleTicksPerDegree = 0,
+        } = powerBase ?? {};
         const deviceData = buildMQTTDeviceData(device);
         bed = beds[processorId] = {
           processorId,
@@ -57,7 +62,7 @@ export const sleeptracker = async (mqtt: IMQTTConnection) => {
           controllers: [],
           sensors: [],
           supportedFeatures: {
-            smartBedControls: isSmartBed,
+            smartBedControls: isSmartBed && !!powerBase,
             antiSnorePreset: antiSnorePresetSupported,
             environmentSensors: helloData.productFeatures.includes('env_sensors'),
             motors: helloData.productFeatures.includes('motors'),

@@ -118,6 +118,29 @@ export const sleeptracker = async (mqtt: IMQTTConnection) => {
   const refreshDeviceData = async () => {
     for (const bed of Object.values(beds)) {
       logInfo('[Sleeptracker] Fetching data for bed', bed.processorId);
+
+      // Re-fetch helloData + device info every tick and push into the existing
+      // diagnostic entities. Previously these were only populated on startup,
+      // which meant attributes like lastHeartbeat / lastGoodSleepUpload /
+      // lastDataSlot / leftSensor.status / rightSensor.status never advanced
+      // without an add-on restart. Important for tracker-only devices where
+      // these timestamps are the only live-ish signal available.
+      try {
+        const freshHello = await getHelloData(bed.processorId, bed.primaryUser);
+        if (freshHello) {
+          (bed.entities.helloData as HelloDataSensor).setState(freshHello);
+        }
+        const freshDevices = await getDevices(bed.primaryUser);
+        const freshDevice = freshDevices.find(
+          (d) => d.sleeptrackerProcessorID === bed.processorId
+        );
+        if (freshDevice) {
+          (bed.entities.deviceInfo as DeviceInfoSensor).setState(freshDevice);
+        }
+      } catch (err) {
+        logError(err);
+      }
+
       const { smartBedControls, environmentSensors, motors } = bed.supportedFeatures;
       if (smartBedControls) {
         const snapshots = await sendAdjustableBaseCommand(Commands.Status, bed.primaryUser);
